@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>入浴表</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  :root {
+    --sakura: #e8a0b0;
+    --sakura-dark: #c4677e;
+    --sakura-light: #fdf0f3;
+    --keyaki: #7ab89a;
+    --keyaki-dark: #4a8a6a;
+    --keyaki-light: #f0faf4;
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --text-muted: #888;
+    --border: #e8e8e4;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 16px;
+    --tab-active: var(--sakura-dark);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 32px;
+  }
+
+  header {
+    background: white;
+    padding: 16px 20px 0;
+    box-shadow: 0 1px 0 var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .date-badge {
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab.active-sakura {
+    color: var(--sakura-dark);
+    border-bottom-color: var(--sakura-dark);
+  }
+
+  .tab.active-keyaki {
+    color: var(--keyaki-dark);
+    border-bottom-color: var(--keyaki-dark);
+  }
+
+  .main {
+    padding: 20px 16px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .unit-panel { display: none; }
+  .unit-panel.active { display: block; }
+
+  .summary-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .summary-chip {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+
+  .summary-chip .num {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .summary-chip .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .num.done { color: var(--sakura-dark); }
+  .num.done.keyaki { color: var(--keyaki-dark); }
+  .num.total { color: var(--text); }
+
+  .add-btn-wrap {
+    margin-bottom: 16px;
+  }
+
+  .add-btn {
+    width: 100%;
+    padding: 14px;
+    border: 2px dashed var(--border);
+    background: white;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover { border-color: var(--sakura); color: var(--sakura-dark); }
+  .add-btn.keyaki-btn:hover { border-color: var(--keyaki); color: var(--keyaki-dark); }
+
+  .resident-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    transition: opacity 0.3s;
+    position: relative;
+  }
+
+  .resident-card.bathed {
+    background: #f9f9f9;
+    opacity: 0.75;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .resident-name {
+    font-size: 17px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .time-badge {
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .vital-btn {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+  .vital-btn.on {
+    background: #16a34a;
+    color: white;
+  }
+  .vital-btn.off {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .bath-btn {
+    background: var(--sakura-light);
+    color: var(--sakura-dark);
+  }
+  .bath-btn.on {
+    background: var(--sakura-dark);
+    color: white;
+  }
+  .bath-btn.keyaki {
+    background: var(--keyaki-light);
+    color: var(--keyaki-dark);
+  }
+  .bath-btn.keyaki.on {
+    background: var(--keyaki-dark);
+    color: white;
+  }
+
+  .delete-btn {
+    width: 40px;
+    border: none;
+    background: #fef2f2;
+    color: #dc2626;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .delete-btn:active { background: #dc2626; color: white; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 680px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .modal input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 16px;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal input:focus { border-color: var(--sakura-dark); }
+  .modal input.keyaki-input:focus { border-color: var(--keyaki-dark); }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .modal-cancel {
+    flex: 1;
+    padding: 14px;
+    border: 1.5px solid var(--border);
+    background: white;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .modal-submit {
+    flex: 2;
+    padding: 14px;
+    border: none;
+    background: var(--sakura-dark);
+    color: white;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-submit.keyaki { background: var(--keyaki-dark); }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #222;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 999;
+    transition: transform 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>🛁 入浴表</h1>
+    <span class="date-badge" id="todayDate"></span>
+  </div>
+  <div class="tabs">
+    <button class="tab active-sakura" onclick="switchUnit('sakura')" id="tab-sakura">🌸 さくら</button>
+    <button class="tab" onclick="switchUnit('keyaki')" id="tab-keyaki">🌿 けやき</button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- さくら -->
+  <div class="unit-panel active" id="panel-sakura">
+    <div class="summary-bar">
+      <div class="summary-chip">
+        <div class="num done" id="sakura-done">0</div>
+        <div class="label">入浴済み</div>
+      </div>
+      <div class="summary-chip">
+        <div class="num total" id="sakura-total">0</div>
+        <div class="label">合計</div>
+      </div>
+      <div class="summary-chip">
+        <div class="num done" id="sakura-vital">0</div>
+        <div class="label">バイタルOK</div>
+      </div>
+    </div>
+    <div class="add-btn-wrap">
+      <button class="add-btn" onclick="openModal('sakura')">＋ 利用者を追加</button>
+    </div>
+    <div id="list-sakura"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <!-- けやき -->
+  <div class="unit-panel" id="panel-keyaki">
+    <div class="summary-bar">
+      <div class="summary-chip">
+        <div class="num done keyaki" id="keyaki-done">0</div>
+        <div class="label">入浴済み</div>
+      </div>
+      <div class="summary-chip">
+        <div class="num total" id="keyaki-total">0</div>
+        <div class="label">合計</div>
+      </div>
+      <div class="summary-chip">
+        <div class="num done keyaki" id="keyaki-vital">0</div>
+        <div class="label">バイタルOK</div>
+      </div>
+    </div>
+    <div class="add-btn-wrap">
+      <button class="add-btn keyaki-btn" onclick="openModal('keyaki')">＋ 利用者を追加</button>
+    </div>
+    <div id="list-keyaki"><div class="loading">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- 追加モーダル -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modal-title">利用者を追加</h2>
+    <label>お名前</label>
+    <input type="text" id="input-name" placeholder="例：山田 花子" autocomplete="off">
+    <label>入浴予定時間（任意）</label>
+    <input type="time" id="input-time">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="modal-submit" id="modal-submit-btn" onclick="addResident()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ========== 設定 ==========
+  const SUPABASE_URL = 'https://fmnkqxzrfqyfxwsfcuxp.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtbmtxeHpyZnF5Znh3c2ZjdXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzgwNDMsImV4cCI6MjA5MTMxNDA0M30.A10_013hFDQm6MBUbMirKYQ6YTVsb0k9m91iu4eLMmg';
+  const TABLE = 'nyuyoku';
+
+  // ========== 状態 ==========
+  let currentUnit = 'sakura';
+  let modalUnit = 'sakura';
+  let data = { sakura: [], keyaki: [] };
+  let channel = null;
+
+  // ========== 日付 ==========
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  document.getElementById('todayDate').textContent =
+    `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+
+  // ========== API ==========
+  async function api(path, method='GET', body=null) {
+    const opts = {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : ''
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, opts);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    if (method === 'DELETE' || (method === 'PATCH' && !opts.headers['Prefer'])) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  // ========== データ取得 ==========
+  async function fetchAll() {
+    try {
+      const rows = await api(`${TABLE}?bath_date=eq.${todayStr}&order=created_at.asc`);
+      data.sakura = rows.filter(r => r.unit === 'sakura');
+      data.keyaki = rows.filter(r => r.unit === 'keyaki');
+      renderUnit('sakura');
+      renderUnit('keyaki');
+    } catch(e) {
+      console.error(e);
+      showToast('データの取得に失敗しました');
+    }
+  }
+
+  // ========== リアルタイム ==========
+  function setupRealtime() {
+    // Supabase Realtime via WebSocket
+    const wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        topic: `realtime:public:${TABLE}`,
+        event: 'phx_join',
+        payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: 'public', table: TABLE }] } },
+        ref: '1'
+      }));
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.event === 'postgres_changes' || (msg.payload && msg.payload.data)) {
+        fetchAll();
+      }
+    };
+
+    ws.onclose = () => {
+      setTimeout(setupRealtime, 3000);
+    };
+  }
+
+  // ========== レンダリング ==========
+  function renderUnit(unit) {
+    const list = data[unit];
+    const isKeyaki = unit === 'keyaki';
+    const container = document.getElementById(`list-${unit}`);
+
+    const done = list.filter(r => r.bathed).length;
+    const vital = list.filter(r => r.vital_ok).length;
+    document.getElementById(`${unit}-done`).textContent = done;
+    document.getElementById(`${unit}-total`).textContent = list.length;
+    document.getElementById(`${unit}-vital`).textContent = vital;
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="empty">まだ利用者が登録されていません<br>「＋ 利用者を追加」から登録してください</div>`;
+      return;
+    }
+
+    // 未入浴→入浴済みの順
+    const sorted = [...list].sort((a,b) => {
+      if (a.bathed === b.bathed) return 0;
+      return a.bathed ? 1 : -1;
+    });
+
+    container.innerHTML = sorted.map(r => {
+      const bathClass = isKeyaki ? 'bath-btn keyaki' + (r.bathed ? ' on' : '') : 'bath-btn' + (r.bathed ? ' on' : '');
+      const vitalClass = 'vital-btn' + (r.vital_ok ? ' on' : (r.vital_ok === false ? ' off' : ''));
+      const timeStr = r.scheduled_time ? r.scheduled_time.slice(0,5) : '';
+
+      return `<div class="resident-card ${r.bathed ? 'bathed' : ''}" id="card-${r.id}">
+        <div class="card-top">
+          <span class="resident-name">${escHtml(r.resident_name)}</span>
+          ${timeStr ? `<span class="time-badge">🕐 ${timeStr}</span>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="toggle-btn ${vitalClass}" onclick="toggleVital('${r.id}', ${r.vital_ok})">
+            ${r.vital_ok ? '✅ バイタルOK' : '🩺 バイタル確認'}
+          </button>
+          <button class="toggle-btn ${bathClass}" onclick="toggleBath('${r.id}', ${r.bathed})">
+            ${r.bathed ? '🛁 入浴済み' : '🛁 未入浴'}
+          </button>
+          <button class="delete-btn" onclick="deleteResident('${r.id}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ========== 操作 ==========
+  async function toggleVital(id, current) {
+    try {
+      await api(`${TABLE}?id=eq.${id}`, 'PATCH', { vital_ok: !current });
+      const unit = findUnit(id);
+      const row = data[unit].find(r => r.id === id);
+      if (row) row.vital_ok = !current;
+      renderUnit(unit);
+      showToast(!current ? 'バイタルOKにしました' : 'バイタル未確認に戻しました');
+    } catch(e) { showToast('更新に失敗しました'); }
+  }
+
+  async function toggleBath(id, current) {
+    try {
+      await api(`${TABLE}?id=eq.${id}`, 'PATCH', { bathed: !current });
+      const unit = findUnit(id);
+      const row = data[unit].find(r => r.id === id);
+      if (row) row.bathed = !current;
+      renderUnit(unit);
+      showToast(!current ? '入浴済みにしました ✨' : '未入浴に戻しました');
+    } catch(e) { showToast('更新に失敗しました'); }
+  }
+
+  async function deleteResident(id) {
+    if (!confirm('この利用者を削除しますか？')) return;
+    try {
+      await api(`${TABLE}?id=eq.${id}`, 'DELETE');
+      const unit = findUnit(id);
+      data[unit] = data[unit].filter(r => r.id !== id);
+      renderUnit(unit);
+      showToast('削除しました');
+    } catch(e) { showToast('削除に失敗しました'); }
+  }
+
+  function findUnit(id) {
+    return data.sakura.find(r => r.id === id) ? 'sakura' : 'keyaki';
+  }
+
+  // ========== 追加モーダル ==========
+  function openModal(unit) {
+    modalUnit = unit;
+    document.getElementById('modal-title').textContent = unit === 'sakura' ? '🌸 さくらに追加' : '🌿 けやきに追加';
+    document.getElementById('modal-submit-btn').className = 'modal-submit' + (unit === 'keyaki' ? ' keyaki' : '');
+    document.getElementById('input-name').className = unit === 'keyaki' ? 'keyaki-input' : '';
+    document.getElementById('input-name').value = '';
+    document.getElementById('input-time').value = '';
+    document.getElementById('modal').classList.add('open');
+    setTimeout(() => document.getElementById('input-name').focus(), 300);
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  async function addResident() {
+    const name = document.getElementById('input-name').value.trim();
+    if (!name) { showToast('名前を入力してください'); return; }
+    const time = document.getElementById('input-time').value;
+
+    try {
+      const rows = await api(TABLE, 'POST', {
+        unit: modalUnit,
+        resident_name: name,
+        scheduled_time: time || null,
+        bath_date: todayStr
+      });
+      if (rows && rows[0]) {
+        data[modalUnit].push(rows[0]);
+        renderUnit(modalUnit);
+      }
+      closeModal();
+      showToast(`${name}さんを追加しました`);
+    } catch(e) {
+      showToast('追加に失敗しました');
+      console.error(e);
+    }
+  }
+
+  // Enterキーで追加
+  document.getElementById('input-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('input-time').focus();
+  });
+  document.getElementById('input-time').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addResident();
+  });
+
+  // ========== タブ切り替え ==========
+  function switchUnit(unit) {
+    currentUnit = unit;
+    document.querySelectorAll('.unit-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${unit}`).classList.add('active');
+    document.getElementById('tab-sakura').className = 'tab' + (unit === 'sakura' ? ' active-sakura' : '');
+    document.getElementById('tab-keyaki').className = 'tab' + (unit === 'keyaki' ? ' active-keyaki' : '');
+  }
+
+  // ========== トースト ==========
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ========== 起動 ==========
+  fetchAll();
+  setupRealtime();
+</script>
+</body>
+</html>
