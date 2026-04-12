@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>入浴表</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{
+  --sakura-dark:#c4677e;--sakura-light:#fdf0f3;
+  --keyaki-dark:#4a8a6a;--keyaki-light:#f0faf4;
+  --bg:#f5f5f3;--text:#2a2a2a;--muted:#999;--border:#e8e8e4;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);--r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:48px}
+
+/* HEADER */
+header{background:white;box-shadow:0 1px 0 var(--border);position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:13px 15px 10px}
+h1{font-size:19px;font-weight:700}
+.unit-btns{display:flex;gap:7px}
+.unit-btn{padding:5px 12px;border:1.5px solid var(--border);background:white;border-radius:20px;font-family:inherit;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s}
+.unit-btn.as{border-color:var(--sakura-dark);color:var(--sakura-dark);background:var(--sakura-light)}
+.unit-btn.ak{border-color:var(--keyaki-dark);color:var(--keyaki-dark);background:var(--keyaki-light)}
+.day-tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 12px;gap:2px}
+.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{flex-shrink:0;padding:7px 10px 10px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;text-align:center;min-width:42px}
+.day-tab .dn{display:block}.day-tab .dd{display:block;font-size:10px;font-weight:400;margin-top:1px}
+.day-tab.as{color:var(--sakura-dark);border-bottom-color:var(--sakura-dark)}
+.day-tab.ak{color:var(--keyaki-dark);border-bottom-color:var(--keyaki-dark)}
+.day-tab.today{background:var(--sakura-light);border-radius:8px 8px 0 0}
+
+/* MAIN */
+.main{padding:15px 13px;max-width:680px;margin:0 auto}
+.summary{display:flex;gap:7px;margin-bottom:13px}
+.chip{flex:1;background:white;border-radius:12px;padding:9px 6px;box-shadow:var(--shadow);text-align:center}
+.chip .n{font-size:22px;font-weight:700;line-height:1}
+.chip .l{font-size:10px;color:var(--muted);margin-top:3px}
+.ns{color:var(--sakura-dark)}.nk{color:var(--keyaki-dark)}.ny{color:#ca8a04}
+.sec-title{font-size:12px;font-weight:700;color:var(--muted);margin:13px 0 7px 2px;display:flex;align-items:center;gap:6px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* CARD */
+.res-card{background:white;border-radius:var(--r);padding:13px 13px 11px;margin-bottom:8px;box-shadow:var(--shadow)}
+.res-card.bathed{opacity:.6;background:#f9f9f9}
+.card-top{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.res-name{font-size:16px;font-weight:700;flex:1}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.bt{background:#fef3c7;color:#b45309}.bi{background:#e0f2fe;color:#0369a1}
+.bm{background:#f0fdf4;color:#15803d}.ba{background:#fdf4ff;color:#9333ea}
+
+/* CARD ACTIONS */
+.card-actions{display:flex;gap:6px;position:relative}
+.act-btn{flex:1;padding:9px 4px;border:none;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;position:relative}
+/* バイタル */
+.v-none{background:#f3f4f6;color:#6b7280}
+.v-ok{background:#dcfce7;color:#16a34a}
+.v-recheck{background:#fee2e2;color:#dc2626}
+/* 処置 */
+.t-off{background:#f3f4f6;color:#6b7280}
+.t-on{background:#fef9c3;color:#ca8a04}
+/* 入浴 */
+.b-off{background:#f3f4f6;color:#6b7280}
+.b-on-s{background:var(--sakura-dark);color:white}
+.b-on-k{background:var(--keyaki-dark);color:white}
+/* 削除 */
+.del-btn{width:36px;flex:none;border:none;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:14px;cursor:pointer}
+
+/* 週変更 */
+.week-btn{display:block;width:100%;margin-top:8px;padding:6px;border:1px dashed var(--border);background:none;border-radius:8px;font-family:inherit;font-size:11px;color:var(--muted);cursor:pointer;text-align:center}
+
+/* DROPDOWN */
+.dropdown{position:absolute;bottom:calc(100% + 6px);left:0;min-width:130px;background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:500;overflow:hidden;animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.dropdown.right{left:auto;right:0}
+.dd-item{display:block;width:100%;padding:12px 16px;border:none;background:white;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;text-align:left;transition:background .1s;white-space:nowrap}
+.dd-item:hover{background:#f5f5f5}
+.dd-item.active{background:#f0f9ff;color:#0369a1}
+.dd-sep{height:1px;background:var(--border);margin:2px 0}
+
+/* ADD BTN */
+.add-btn{width:100%;padding:13px;border:2px dashed var(--border);background:white;border-radius:var(--r);font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;transition:all .15s;margin-top:4px}
+.add-btn.ks:hover{border-color:var(--sakura-dark);color:var(--sakura-dark)}
+.add-btn.kk:hover{border-color:var(--keyaki-dark);color:var(--keyaki-dark)}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:white;border-radius:24px 24px 0 0;padding:22px 18px 40px;width:100%;max-width:680px;animation:up .25s ease;max-height:92vh;overflow-y:auto}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h2{font-size:17px;margin-bottom:16px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.fg input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:15px;outline:none}
+.fg input:focus{border-color:var(--sakura-dark)}
+.rg{display:flex;gap:7px;flex-wrap:wrap}
+.rb{flex:1;min-width:70px;padding:10px 7px;border:1.5px solid var(--border);background:white;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:center;color:var(--muted);transition:all .15s}
+.rb.ss{border-color:var(--sakura-dark);background:var(--sakura-light);color:var(--sakura-dark)}
+.rb.sk{border-color:var(--keyaki-dark);background:var(--keyaki-light);color:var(--keyaki-dark)}
+.rb.sn{border-color:#2563eb;background:#eff6ff;color:#2563eb}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.modal-btns{display:flex;gap:8px;margin-top:18px}
+.m-cancel{flex:1;padding:12px;border:1.5px solid var(--border);background:white;border-radius:12px;font-family:inherit;font-size:14px;cursor:pointer}
+.m-submit{flex:2;padding:12px;border:none;background:var(--sakura-dark);color:white;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.m-submit.k{background:var(--keyaki-dark)}
+
+
+/* 特浴・一般浴 2列 */
+.bath-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bath-col-title{font-size:11px;font-weight:700;padding:4px 8px;border-radius:8px;margin-bottom:6px;text-align:center}
+.bt-title{background:#fef3c7;color:#b45309}
+.bi-title{background:#e0f2fe;color:#0369a1}
+.bath-col-empty{font-size:12px;color:#ccc;text-align:center;padding:16px 0}
+.col-count{font-weight:400;font-size:10px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#222;color:white;padding:9px 18px;border-radius:20px;font-size:13px;z-index:999;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1>🛁 入浴表</h1>
+    <div class="unit-btns">
+      <button class="unit-btn as" id="us" onclick="switchUnit('sakura')">🌸 さくら</button>
+      <button class="unit-btn" id="uk" onclick="switchUnit('keyaki')">🌿 けやき</button>
+    </div>
+  </div>
+  <div class="day-tabs" id="dayTabs"></div>
+</header>
+
+<div class="main">
+  <div class="summary">
+    <div class="chip"><div class="n ns" id="cBathed">0</div><div class="l">入浴済み</div></div>
+    <div class="chip"><div class="n" id="cTotal">0</div><div class="l">本日予定</div></div>
+    <div class="chip"><div class="n ns" id="cVital">0</div><div class="l">バイタルOK</div></div>
+    <div class="chip"><div class="n ny" id="cTreat">0</div><div class="l">処置あり</div></div>
+  </div>
+  <div id="listGozen"></div>
+  <div id="listGogo"></div>
+  <button class="add-btn ks" id="addBtn" onclick="openAddModal()">＋ 利用者を登録</button>
+</div>
+
+<!-- 登録モーダル -->
+<div class="modal-ov" id="addModal" onclick="closeModalOv(event,'addModal')">
+  <div class="modal">
+    <h2 id="addTitle">🌸 さくらに利用者を登録</h2>
+    <div class="fg"><label>お名前</label><input type="text" id="iName" placeholder="例：山田 花子" autocomplete="off"></div>
+    <div class="fg">
+      <label>入浴方法</label>
+      <div class="rg" id="gBathType">
+        <button class="rb" onclick="selR('bathType','一般浴',this)">一般浴</button>
+        <button class="rb" onclick="selR('bathType','特浴',this)">特浴</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>基本の時間帯</label>
+      <div class="rg" id="gTime">
+        <button class="rb" onclick="selR('timeOfDay','午前',this)">午前</button>
+        <button class="rb" onclick="selR('timeOfDay','午後',this)">午後</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>入浴曜日</label>
+      <div class="day-grid" id="gDay">
+        <button class="rb" onclick="selR('dayOfWeek','0',this)">月</button>
+        <button class="rb" onclick="selR('dayOfWeek','1',this)">火</button>
+        <button class="rb" onclick="selR('dayOfWeek','2',this)">水</button>
+        <button class="rb" onclick="selR('dayOfWeek','3',this)">木</button>
+        <button class="rb" onclick="selR('dayOfWeek','4',this)">金</button>
+        <button class="rb" onclick="selR('dayOfWeek','5',this)">土</button>
+        <button class="rb" onclick="selR('dayOfWeek','6',this)">日</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeModal('addModal')">キャンセル</button>
+      <button class="m-submit" id="addSubmit" onclick="submitAdd()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 週変更モーダル -->
+<div class="modal-ov" id="weekModal" onclick="closeModalOv(event,'weekModal')">
+  <div class="modal">
+    <h2>📅 曜日変更</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px" id="wkName"></p>
+    <div class="fg">
+      <label>曜日（今週のみ）</label>
+      <div class="day-grid" id="gWeekDay" style="grid-template-columns:repeat(4,1fr)">
+        <button class="rb" onclick="selR('weekDay','0',this)">月</button>
+        <button class="rb" onclick="selR('weekDay','1',this)">火</button>
+        <button class="rb" onclick="selR('weekDay','2',this)">水</button>
+        <button class="rb" onclick="selR('weekDay','3',this)">木</button>
+        <button class="rb" onclick="selR('weekDay','4',this)">金</button>
+        <button class="rb" onclick="selR('weekDay','5',this)">土</button>
+        <button class="rb" onclick="selR('weekDay','6',this)">日</button>
+        <button class="rb" onclick="selR('weekDay','',this)">変更なし</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>時間帯（今週のみ）</label>
+      <div class="rg" id="gWeekTime">
+        <button class="rb" onclick="selR('weekTime','午前',this)">午前</button>
+        <button class="rb" onclick="selR('weekTime','午後',this)">午後</button>
+        <button class="rb" onclick="selR('weekTime','',this)">変更なし</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeModal('weekModal')">キャンセル</button>
+      <button class="m-submit" style="background:#4b5563" onclick="submitWeek()">保存する</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 基本設定変更モーダル -->
+<div class="modal-ov" id="permModal" onclick="closeModalOv(event,'permModal')">
+  <div class="modal">
+    <h2>✏️ 基本設定を変更</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px" id="permModalName"></p>
+    <div class="fg">
+      <label>入浴曜日</label>
+      <div class="day-grid" id="gPermDay">
+        <button class="rb" onclick="selR('permDay','0',this)">月</button>
+        <button class="rb" onclick="selR('permDay','1',this)">火</button>
+        <button class="rb" onclick="selR('permDay','2',this)">水</button>
+        <button class="rb" onclick="selR('permDay','3',this)">木</button>
+        <button class="rb" onclick="selR('permDay','4',this)">金</button>
+        <button class="rb" onclick="selR('permDay','5',this)">土</button>
+        <button class="rb" onclick="selR('permDay','6',this)">日</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>時間帯</label>
+      <div class="rg" id="gPermTime">
+        <button class="rb" onclick="selR('permTime','午前',this)">午前</button>
+        <button class="rb" onclick="selR('permTime','午後',this)">午後</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>入浴方法</label>
+      <div class="rg" id="gPermBathType">
+        <button class="rb" onclick="selR('permBathType','一般浴',this)">一般浴</button>
+        <button class="rb" onclick="selR('permBathType','特浴',this)">特浴</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeModal('permModal')">キャンセル</button>
+      <button class="m-submit" style="background:#8b6914" onclick="submitPerm()">変更を保存</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SURL='https://fmnkqxzrfqyfxwsfcuxp.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtbmtxeHpyZnF5Znh3c2ZjdXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzgwNDMsImV4cCI6MjA5MTMxNDA0M30.A10_013hFDQm6MBUbMirKYQ6YTVsb0k9m91iu4eLMmg';
+const DAYS=['月','火','水','木','金','土','日'];
+
+let unit='sakura', dayIdx=0, weekDates=[], weekStart='';
+let residents=[], overrides=[], records={};
+let rv={bathType:'一般浴',timeOfDay:'午前',dayOfWeek:'',weekTime:'',weekDay:'',permDay:'',permTime:'午前',permBathType:'一般浴'};
+let weekId=null, openDropdownId=null;
+
+// ── INIT ──
+function initWeek(){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const dow=t.getDay();
+  const mo=new Date(t); mo.setDate(t.getDate()+(dow===0?-6:1-dow));
+  weekDates=Array.from({length:7},(_,i)=>{const d=new Date(mo);d.setDate(mo.getDate()+i);return d;});
+  weekStart=ds(weekDates[0]);
+  dayIdx=dow===0?6:dow-1;
+  buildTabs();
+}
+function ds(d){return d.toISOString().split('T')[0];}
+
+function buildTabs(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const c=document.getElementById('dayTabs'); c.innerHTML='';
+  weekDates.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='day-tab'+(i===dayIdx?' '+(unit==='sakura'?'as':'ak'):'')+(ds(d)===ds(today)?' today':'');
+    b.innerHTML=`<span class="dn">${DAYS[i]}</span><span class="dd">${d.getMonth()+1}/${d.getDate()}</span>`;
+    b.onclick=()=>{dayIdx=i;buildTabs();fetchAll();};
+    c.appendChild(b);
+  });
+}
+
+// ── API ──
+async function api(path,method='GET',body=null){
+  const r=await fetch(`${SURL}/rest/v1/${path}`,{method,
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json',
+      'Prefer':method==='POST'||method==='PATCH'?'return=representation':''},
+    body:body?JSON.stringify(body):undefined});
+  if(!r.ok) throw new Error(await r.text());
+  const t=await r.text(); return t?JSON.parse(t):null;
+}
+async function upsert(table,body,conflict){
+  const r=await fetch(`${SURL}/rest/v1/${table}?on_conflict=${conflict}`,{method:'POST',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json',
+      'Prefer':'return=representation,resolution=merge-duplicates'},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  const t=await r.text(); return t?JSON.parse(t):null;
+}
+
+// ── FETCH ──
+async function fetchAll(){
+  try{
+    const dateStr=ds(weekDates[dayIdx]);
+    const [res,ovr,rec]=await Promise.all([
+      api(`residents?unit=eq.${unit}&order=created_at.asc`),
+      api(`resident_overrides?week_start=eq.${weekStart}`),
+      api(`bath_records?bath_date=eq.${dateStr}`)
+    ]);
+    residents=res||[]; overrides=ovr||[]; records={};
+    (rec||[]).forEach(r=>{records[r.resident_id]=r;});
+    render();
+  }catch(e){toast('データ取得失敗');console.error(e);}
+}
+
+// ── SCHEDULE ──
+function effSched(r){
+  const o=overrides.find(x=>x.resident_id===r.id);
+  let day=parseInt(r.base_day), time=r.base_time||'午前';
+  if(o){if(o.time_of_day)time=o.time_of_day;if(o.day_of_week!==null&&o.day_of_week!==undefined)day=parseInt(o.day_of_week);}
+  return{day,time};
+}
+
+// ── RENDER ──
+function render(){
+  const isK=unit==='keyaki'; const cc=isK?'nk':'ns';
+  const today=residents.filter(r=>effSched(r).day===dayIdx);
+  const gozen=today.filter(r=>effSched(r).time==='午前');
+  const gogo=today.filter(r=>effSched(r).time==='午後');
+  const allRec=today.map(r=>records[r.id]).filter(Boolean);
+  document.getElementById('cTotal').textContent=today.length;
+  document.getElementById('cBathed').textContent=allRec.filter(r=>r.bathed).length;
+  document.getElementById('cVital').textContent=allRec.filter(r=>r.vital==='ok').length;
+  document.getElementById('cTreat').textContent=allRec.filter(r=>r.treatment).length;
+  document.getElementById('cBathed').className='n '+cc;
+  document.getElementById('cVital').className='n '+cc;
+  document.getElementById('addBtn').className='add-btn '+(isK?'kk':'ks');
+  renderSec('listGozen',gozen,'☀️ 午前',isK);
+  renderSec('listGogo',gogo,'🌙 午後',isK);
+}
+
+function makeCard(r,isK){
+  const rec=records[r.id]||{};
+  const bathed=rec.bathed||false, vital=rec.vital||'', treat=rec.treatment||false;
+  const {time}=effSched(r);
+  const o=overrides.find(x=>x.resident_id===r.id);
+  const hasOvr=o&&(o.time_of_day||(o.day_of_week!==null&&o.day_of_week!==undefined));
+  const vLabel=vital==='ok'?'✅ バイタルOK':vital==='recheck'?'⚠️ 要再検':'🩺 バイタル未確認';
+  const vClass=vital==='ok'?'act-btn v-ok':vital==='recheck'?'act-btn v-recheck':'act-btn v-none';
+  const tLabel=treat?'🩹 処置あり':'🩹 処置なし';
+  const tClass=treat?'act-btn t-on':'act-btn t-off';
+  const bLabel=bathed?'🛁 入浴済み':'🛁 未入浴';
+  const bClass=bathed?(isK?'act-btn b-on-k':'act-btn b-on-s'):'act-btn b-off';
+  return `<div class="res-card${bathed?' bathed':''}">
+    <div class="card-top">
+      <span class="res-name">${esc(r.name)}</span>
+      ${hasOvr?`<span class="badge ba">⚡${time}</span>`:''}
+    </div>
+    <div class="card-actions" id="ca-${r.id}">
+      <button class="${vClass}" onclick="toggleDD(event,'vital','${r.id}')">${vLabel} ▾</button>
+      <button class="${tClass}" onclick="toggleDD(event,'treat','${r.id}')">${tLabel} ▾</button>
+      <button class="${bClass}" onclick="toggleDD(event,'bath','${r.id}')">${bLabel} ▾</button>
+      <button class="del-btn" onclick="delResident('${r.id}')">🗑</button>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:8px">
+      <button class="week-btn" style="margin-top:0;flex:1" onclick="openWeekModal('${r.id}')">📅 今週だけ変更</button>
+      <button class="week-btn" style="margin-top:0;flex:1;border-color:#c4a882;color:#8b6914" onclick="openPermModal('${r.id}')">✏️ 基本設定を変更</button>
+    </div>
+  </div>`;
+}
+
+function renderSec(id,list,label,isK){
+  const c=document.getElementById(id);
+  if(!list.length){c.innerHTML='';return;}
+  const tok=list.filter(r=>r.bath_type==='特浴');
+  const ipp=list.filter(r=>r.bath_type!=='特浴');
+  const tokHtml=tok.length
+    ?`<div class="bath-col-title bt-title">🛁 特浴 <span class="col-count">${tok.length}名</span></div>${tok.map(r=>makeCard(r,isK)).join('')}`
+    :`<div class="bath-col-empty">なし</div>`;
+  const ippHtml=ipp.length
+    ?`<div class="bath-col-title bi-title">🚿 一般浴 <span class="col-count">${ipp.length}名</span></div>${ipp.map(r=>makeCard(r,isK)).join('')}`
+    :`<div class="bath-col-empty">なし</div>`;
+  c.innerHTML=`<div class="sec-title">${label}</div><div class="bath-cols"><div class="bath-col">${tokHtml}</div><div class="bath-col">${ippHtml}</div></div>`;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── DROPDOWN ──
+function toggleDD(e,type,resId){
+  e.stopPropagation();
+  const btn=e.currentTarget;
+
+  // 既に開いていたら閉じる
+  if(openDropdownId===resId+type){closeAllDD();return;}
+  closeAllDD();
+  openDropdownId=resId+type;
+
+  const rec=records[resId]||{};
+  let items=[];
+
+  if(type==='vital'){
+    const v=rec.vital||'';
+    items=[
+      {label:'🩺 未確認', val:'', active:v===''},
+      {label:'✅ OK',     val:'ok', active:v==='ok'},
+      {label:'⚠️ 再検',  val:'recheck', active:v==='recheck'},
+    ];
+  } else if(type==='treat'){
+    const t=rec.treatment||false;
+    items=[
+      {label:'🩹 処置なし', val:'off', active:!t},
+      {label:'🩹 処置あり', val:'on',  active:t},
+    ];
+  } else if(type==='bath'){
+    const b=rec.bathed||false;
+    items=[
+      {label:'🛁 未入浴',   val:'off', active:!b},
+      {label:'🛁 入浴済み', val:'on',  active:b},
+    ];
+  }
+
+  const dd=document.createElement('div');
+  // ボタンの位置によって右寄せ
+  const btnRect=btn.getBoundingClientRect();
+  const isRight=btnRect.left>window.innerWidth/2;
+  dd.className='dropdown'+(isRight?' right':'');
+  dd.id='dd-'+resId+type;
+  dd.innerHTML=items.map(item=>
+    `<button class="dd-item${item.active?' active':''}" onclick="selectDD(event,'${type}','${resId}','${item.val}')">${item.label}</button>`
+  ).join('');
+
+  btn.style.position='relative';
+  btn.appendChild(dd);
+}
+
+function closeAllDD(){
+  document.querySelectorAll('.dropdown').forEach(d=>d.remove());
+  openDropdownId=null;
+}
+
+async function selectDD(e,type,resId,val){
+  e.stopPropagation();
+  closeAllDD();
+  await ensureRec(resId);
+  const dateStr=ds(weekDates[dayIdx]);
+  try{
+    if(type==='vital'){
+      await api(`bath_records?resident_id=eq.${resId}&bath_date=eq.${dateStr}`,'PATCH',{vital:val});
+      records[resId].vital=val;
+      toast(val==='ok'?'バイタルOK ✅':val==='recheck'?'再検 ⚠️':'バイタル未確認に戻しました');
+    } else if(type==='treat'){
+      const v=val==='on';
+      await api(`bath_records?resident_id=eq.${resId}&bath_date=eq.${dateStr}`,'PATCH',{treatment:v});
+      records[resId].treatment=v;
+      toast(v?'処置あり 🩹':'処置なしに変更');
+    } else if(type==='bath'){
+      const v=val==='on';
+      await api(`bath_records?resident_id=eq.${resId}&bath_date=eq.${dateStr}`,'PATCH',{bathed:v});
+      records[resId].bathed=v;
+      toast(v?'入浴済み 🛁✨':'未入浴に戻しました');
+    }
+    render();
+  }catch(e){toast('更新失敗');}
+}
+
+async function ensureRec(id){
+  if(!records[id]){
+    const dateStr=ds(weekDates[dayIdx]);
+    const rows=await upsert('bath_records',{resident_id:id,bath_date:dateStr,vital:'',treatment:false,bathed:false},'resident_id,bath_date');
+    if(rows&&rows[0])records[id]=rows[0];
+  }
+}
+
+async function delResident(id){
+  const r=residents.find(x=>x.id===id);
+  if(!confirm(`${r?.name||''}さんを削除しますか？`))return;
+  try{
+    await api(`residents?id=eq.${id}`,'DELETE');
+    residents=residents.filter(x=>x.id!==id);
+    delete records[id];
+    render(); toast('削除しました');
+  }catch(e){toast('削除失敗');}
+}
+
+// ── UNIT / DAY ──
+function switchUnit(u){
+  unit=u;
+  document.getElementById('us').className='unit-btn'+(u==='sakura'?' as':'');
+  document.getElementById('uk').className='unit-btn'+(u==='keyaki'?' ak':'');
+  buildTabs(); fetchAll();
+}
+
+// ── ADD MODAL ──
+function openAddModal(){
+  rv.bathType='一般浴'; rv.timeOfDay='午前'; rv.dayOfWeek='';
+  document.getElementById('iName').value='';
+  document.getElementById('addTitle').textContent=unit==='sakura'?'🌸 さくらに利用者を登録':'🌿 けやきに利用者を登録';
+  document.getElementById('addSubmit').className='m-submit'+(unit==='keyaki'?' k':'');
+  ['gBathType','gTime','gDay'].forEach(id=>document.getElementById(id).querySelectorAll('.rb').forEach(b=>b.className='rb'));
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(()=>document.getElementById('iName').focus(),300);
+}
+
+function selR(key,val,btn){
+  rv[key]=val;
+  const gm={bathType:'gBathType',timeOfDay:'gTime',dayOfWeek:'gDay',weekTime:'gWeekTime',weekDay:'gWeekDay',permDay:'gPermDay',permTime:'gPermTime',permBathType:'gPermBathType'};
+  const gid=gm[key]; if(gid) document.getElementById(gid).querySelectorAll('.rb').forEach(b=>b.className='rb');
+  btn.classList.add(key.startsWith('week')?'sn':unit==='keyaki'?'sk':'ss');
+}
+
+async function submitAdd(){
+  const name=document.getElementById('iName').value.trim();
+  if(!name){toast('名前を入力してください');return;}
+  if(rv.dayOfWeek===''){toast('曜日を選んでください');return;}
+  try{
+    const rows=await api('residents','POST',{unit,name,bath_type:rv.bathType,base_day:parseInt(rv.dayOfWeek),base_time:rv.timeOfDay});
+    if(rows&&rows[0])residents.push(rows[0]);
+    closeModal('addModal'); render(); toast(`${name}さんを登録しました`);
+  }catch(e){toast('登録失敗: '+e.message);}
+}
+
+// ── WEEK MODAL ──
+function openWeekModal(id){
+  weekId=id; const r=residents.find(x=>x.id===id);
+  document.getElementById('wkName').textContent=`${r?.name||''}さんの今週の設定`;
+  rv.weekTime=''; rv.weekDay='';
+  ['gWeekTime','gWeekDay'].forEach(id=>document.getElementById(id).querySelectorAll('.rb').forEach(b=>b.className='rb'));
+  const o=overrides.find(x=>x.resident_id===id);
+  if(o){
+    if(o.time_of_day){rv.weekTime=o.time_of_day;document.getElementById('gWeekTime').querySelectorAll('.rb').forEach(b=>{if(b.textContent===o.time_of_day)b.className='rb sn';});}
+    if(o.day_of_week!==null&&o.day_of_week!==undefined){rv.weekDay=String(o.day_of_week);document.getElementById('gWeekDay').querySelectorAll('.rb').forEach(b=>{if(b.textContent===DAYS[o.day_of_week])b.className='rb sn';});}
+  }
+  document.getElementById('weekModal').classList.add('open');
+}
+
+async function submitWeek(){
+  const id=weekId, timeOfDay=rv.weekTime||null, dayOfWeek=rv.weekDay!==''?parseInt(rv.weekDay):null;
+  try{
+    const rows=await upsert('resident_overrides',{resident_id:id,week_start:weekStart,time_of_day:timeOfDay,day_of_week:dayOfWeek},'resident_id,week_start');
+    if(rows&&rows[0]){overrides=overrides.filter(o=>!(o.resident_id===id&&o.week_start===weekStart));overrides.push(rows[0]);}
+    closeModal('weekModal'); render(); toast('今週の設定を保存しました ⚡');
+  }catch(e){toast('保存失敗');}
+}
+
+
+// ── PERM MODAL ──
+let permId=null;
+function openPermModal(id){
+  permId=id;
+  const r=residents.find(x=>x.id===id); if(!r)return;
+  document.getElementById('permModalName').textContent=`${r.name}さんの基本設定を変更`;
+  rv.permDay=String(r.base_day); rv.permTime=r.base_time||'午前'; rv.permBathType=r.bath_type||'一般浴';
+  ['gPermDay','gPermTime','gPermBathType'].forEach(gid=>{
+    document.getElementById(gid).querySelectorAll('.rb').forEach(b=>b.className='rb');
+  });
+  // 現在値を選択状態に
+  document.getElementById('gPermDay').querySelectorAll('.rb').forEach(b=>{
+    if(b.textContent===DAYS[r.base_day]) b.className='rb ss';
+  });
+  document.getElementById('gPermTime').querySelectorAll('.rb').forEach(b=>{
+    if(b.textContent===(r.base_time||'午前')) b.className='rb ss';
+  });
+  document.getElementById('gPermBathType').querySelectorAll('.rb').forEach(b=>{
+    if(b.textContent===(r.bath_type||'一般浴')) b.className='rb ss';
+  });
+  document.getElementById('permModal').classList.add('open');
+}
+
+async function submitPerm(){
+  const id=permId;
+  if(rv.permDay===''){toast('曜日を選んでください');return;}
+  try{
+    await api(`residents?id=eq.${id}`,'PATCH',{base_day:parseInt(rv.permDay),base_time:rv.permTime,bath_type:rv.permBathType});
+    const r=residents.find(x=>x.id===id);
+    if(r){r.base_day=parseInt(rv.permDay);r.base_time=rv.permTime;r.bath_type=rv.permBathType;}
+    closeModal('permModal'); render(); toast('基本設定を変更しました ✏️');
+  }catch(e){toast('保存失敗: '+e.message);}
+}
+// ── UTILS ──
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModalOv(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+
+// 画面どこかタップでドロップダウン閉じる
+document.addEventListener('click',()=>closeAllDD());
+
+let tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);}
+
+setInterval(fetchAll,10000);
+initWeek();
+fetchAll();
+</script>
+</body>
+</html>
