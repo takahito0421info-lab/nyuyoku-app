@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はごろも苑 食事記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:#f0f4f2;color:#1a1a1a;min-height:100vh}
+
+/* HEADER */
+#app-header{
+  background:linear-gradient(135deg,#2d6a4f,#1b4332);
+  color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header-title{font-size:1.2rem;font-weight:700;letter-spacing:.04em}
+.header-date{font-size:.85rem;opacity:.9}
+.date-nav{display:flex;align-items:center;gap:6px}
+.date-nav button{
+  background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);
+  border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.82rem;font-family:inherit;
+  transition:background .15s
+}
+.date-nav button:hover{background:rgba(255,255,255,.32)}
+#date-display{font-weight:700;font-size:.95rem;min-width:100px;text-align:center}
+
+/* TOP ACTIONS */
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-export,.btn-master{
+  background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);
+  border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;
+  transition:background .15s
+}
+.btn-export:hover,.btn-master:hover{background:rgba(255,255,255,.32)}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-bottom:2px solid #d4e8dc;position:sticky;z-index:90;top:62px}
+.tab-btn{
+  flex:1;padding:10px 4px;border:none;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:.9rem;font-weight:500;color:#555;transition:all .15s;
+  border-bottom:3px solid transparent;margin-bottom:-2px
+}
+.tab-btn.active{color:#2d6a4f;border-bottom-color:#2d6a4f;background:#f5fbf7}
+.tab-btn:hover:not(.active){background:#f0f4f2}
+
+/* MEAL TABS */
+.meal-tabs{display:flex;background:#f5fbf7;border-bottom:1px solid #cce5d5;padding:0 12px;gap:4px;position:sticky;z-index:89;top:106px}
+.meal-tab{
+  padding:8px 14px;border:none;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:.85rem;font-weight:500;color:#555;
+  border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s;border-radius:6px 6px 0 0
+}
+.meal-tab.active{color:#2d6a4f;border-bottom-color:#2d6a4f;background:#fff;font-weight:700}
+.meal-tab:hover:not(.active){background:#e8f5ed}
+
+/* MAIN CONTENT */
+#main-content{padding:12px 8px 40px}
+
+/* RESIDENT TABLE */
+.residents-container{overflow-x:auto}
+table.residents-table{width:100%;border-collapse:separate;border-spacing:0 4px;min-width:640px}
+table.residents-table thead th{
+  padding:6px 8px;text-align:center;font-size:.78rem;color:#555;font-weight:600;
+  background:#e8f5ed;position:sticky;top:150px;z-index:80
+}
+table.residents-table thead th:first-child{text-align:left;border-radius:8px 0 0 8px}
+table.residents-table thead th:last-child{border-radius:0 8px 8px 0}
+.resident-row{background:#fff;transition:background .15s}
+.resident-row.recorded{background:#e6f4eb}
+.resident-row td{padding:6px 8px;vertical-align:middle}
+.resident-row td:first-child{border-radius:8px 0 0 8px}
+.resident-row td:last-child{border-radius:0 8px 8px 0}
+.cell-room{font-size:.78rem;color:#666;white-space:nowrap;min-width:48px}
+.cell-name{font-size:.9rem;font-weight:500;white-space:nowrap;min-width:80px}
+
+/* SCORE BUTTONS */
+.score-btns{display:flex;gap:2px;flex-wrap:nowrap}
+.score-btn{
+  min-width:30px;height:36px;border:1px solid #c8e6c9;border-radius:6px;
+  background:#fff;cursor:pointer;font-size:.78rem;font-family:inherit;
+  color:#444;transition:all .1s;padding:0 2px
+}
+.score-btn:hover{background:#e8f5ed;border-color:#81c784}
+.score-btn.selected{background:#2d6a4f;color:#fff;border-color:#2d6a4f;font-weight:700}
+.score-btn.selected-0{background:#ff8a65;color:#fff;border-color:#e64a19}
+
+/* WATER INPUT */
+.water-input{
+  width:72px;height:36px;border:1px solid #c8e6c9;border-radius:6px;
+  padding:0 6px;font-family:inherit;font-size:.9rem;text-align:center;
+  background:#fff;transition:border-color .15s
+}
+.water-input:focus{outline:none;border-color:#2d6a4f;box-shadow:0 0 0 2px rgba(45,106,79,.15)}
+
+/* MASTER SCREEN */
+#master-screen{display:none;padding:16px;max-width:700px;margin:0 auto}
+#master-screen.visible{display:block}
+.master-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.master-header h2{font-size:1.1rem;font-weight:700;color:#2d6a4f}
+.master-unit-tabs{display:flex;gap:6px;margin-bottom:12px}
+.master-unit-tab{
+  padding:7px 20px;border:2px solid #2d6a4f;border-radius:20px;
+  background:#fff;color:#2d6a4f;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:500;
+  transition:all .15s
+}
+.master-unit-tab.active{background:#2d6a4f;color:#fff}
+.master-list{display:flex;flex-direction:column;gap:6px}
+.master-item{
+  display:flex;align-items:center;gap:8px;background:#fff;
+  border-radius:10px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.08)
+}
+.master-item input{
+  border:1px solid #c8e6c9;border-radius:6px;padding:4px 8px;
+  font-family:inherit;font-size:.9rem;height:34px
+}
+.master-item input.inp-room{width:72px}
+.master-item input.inp-name{flex:1}
+.btn-del{
+  background:#ffebee;color:#c62828;border:1px solid #ef9a9a;border-radius:6px;
+  padding:4px 10px;cursor:pointer;font-family:inherit;font-size:.8rem;
+  height:34px;white-space:nowrap;transition:background .15s
+}
+.btn-del:hover{background:#ffcdd2}
+.btn-add{
+  background:#e8f5ed;color:#2d6a4f;border:2px dashed #81c784;border-radius:10px;
+  padding:10px;cursor:pointer;font-family:inherit;font-size:.88rem;width:100%;
+  margin-top:8px;transition:background .15s
+}
+.btn-add:hover{background:#c8e6c9}
+.btn-save{
+  background:#2d6a4f;color:#fff;border:none;border-radius:8px;
+  padding:10px 24px;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;
+  transition:background .15s
+}
+.btn-save:hover{background:#1b4332}
+.btn-back{
+  background:#fff;color:#2d6a4f;border:2px solid #2d6a4f;border-radius:8px;
+  padding:8px 18px;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:500;
+  transition:all .15s
+}
+.btn-back:hover{background:#e8f5ed}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .header-title{font-size:1rem}
+  .score-btn{min-width:26px;height:32px;font-size:.72rem}
+  .water-input{width:60px;height:32px;font-size:.82rem}
+  .cell-name{font-size:.82rem}
+  .meal-tab{padding:6px 10px;font-size:.78rem}
+  table.residents-table{min-width:560px}
+}
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <div class="header-inner">
+    <div class="header-title">🌸 はごろも苑 食事記録</div>
+    <div class="date-nav">
+      <button id="btn-prev">◀ 前日</button>
+      <span id="date-display"></span>
+      <button id="btn-next">翌日 ▶</button>
+    </div>
+    <div class="top-actions">
+      <button class="btn-export" id="btn-export">CSV出力</button>
+      <button class="btn-master" id="btn-master-open">マスタ編集</button>
+    </div>
+  </div>
+</header>
+
+<!-- UNIT TABS -->
+<div class="tabs" id="unit-tabs">
+  <button class="tab-btn active" data-unit="sakura">🌸 さくら（25名）</button>
+  <button class="tab-btn" data-unit="keyaki">🌿 けやき（31名）</button>
+</div>
+
+<!-- MEAL TABS -->
+<div class="meal-tabs" id="meal-tabs">
+  <button class="meal-tab active" data-meal="朝食">朝食</button>
+  <button class="meal-tab" data-meal="昼食">昼食</button>
+  <button class="meal-tab" data-meal="夕食">夕食</button>
+  <button class="meal-tab" data-meal="間食">間食</button>
+</div>
+
+<!-- MAIN AREA -->
+<div id="main-content">
+  <div class="residents-container">
+    <table class="residents-table" id="residents-table">
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MASTER SCREEN -->
+<div id="master-screen">
+  <div class="master-header">
+    <h2>居室マスタ編集</h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn-save" id="btn-master-save">保存</button>
+      <button class="btn-back" id="btn-master-close">← 戻る</button>
+    </div>
+  </div>
+  <div class="master-unit-tabs">
+    <button class="master-unit-tab active" data-unit="sakura">🌸 さくら</button>
+    <button class="master-unit-tab" data-unit="keyaki">🌿 けやき</button>
+  </div>
+  <div class="master-list" id="master-list"></div>
+  <button class="btn-add" id="btn-add-resident">＋ 居室を追加</button>
+</div>
+
+<script>
+// ===================== INITIAL DATA =====================
+const DEFAULT_RESIDENTS = {
+  sakura: [
+    {room:'101',name:'山田 花子'},{room:'102',name:'田中 幸子'},{room:'103',name:'鈴木 美代'},
+    {room:'104',name:'佐藤 照子'},{room:'105',name:'高橋 ハル'},{room:'106',name:'伊藤 君代'},
+    {room:'107',name:'渡辺 文子'},{room:'108',name:'中村 敏江'},{room:'109',name:'小林 千鶴'},
+    {room:'110',name:'加藤 静江'},{room:'111',name:'吉田 富子'},{room:'112',name:'山口 澄子'},
+    {room:'113',name:'松本 信子'},{room:'114',name:'井上 久子'},{room:'115',name:'木村 八重'},
+    {room:'116',name:'林 芳江'},{room:'117',name:'清水 きく'},{room:'118',name:'山崎 春江'},
+    {room:'119',name:'池田 サダ'},{room:'120',name:'橋本 房子'},{room:'121',name:'阿部 芳子'},
+    {room:'122',name:'石川 ミヨ'},{room:'123',name:'前田 キヨ'},{room:'124',name:'藤田 節子'},
+    {room:'125',name:'小川 ウメ'}
+  ],
+  keyaki: [
+    {room:'201',name:'西村 正雄'},{room:'202',name:'岡田 勝男'},{room:'203',name:'松田 義雄'},
+    {room:'204',name:'後藤 茂夫'},{room:'205',name:'斎藤 文雄'},{room:'206',name:'坂本 昭男'},
+    {room:'207',name:'遠藤 清'},{room:'208',name:'青木 武'},{room:'209',name:'藤井 忠雄'},
+    {room:'210',name:'西田 幸夫'},{room:'211',name:'三浦 健一'},{room:'212',name:'藤原 隆'},
+    {room:'213',name:'岡本 進'},{room:'214',name:'村田 博'},{room:'215',name:'野口 浩'},
+    {room:'216',name:'近藤 秀夫'},{room:'217',name:'長谷川 光男'},{room:'218',name:'石田 勇'},
+    {room:'219',name:'菊地 和夫'},{room:'220',name:'内田 良夫'},{room:'221',name:'上田 明'},
+    {room:'222',name:'大野 弘'},{room:'223',name:'木下 豊'},{room:'224',name:'丸山 実'},
+    {room:'225',name:'福田 春男'},{room:'226',name:'沢田 久男'},{room:'227',name:'島田 誠'},
+    {room:'228',name:'工藤 剛'},{room:'229',name:'田村 清志'},{room:'230',name:'桜井 昇'},
+    {room:'231',name:'横田 正'}
+  ]
+};
+
+const RECORDS_KEY = 'shokuji_records_v1';
+const RESIDENTS_KEY = 'shokuji_residents_v1';
+
+// ===================== STATE =====================
+let state = {
+  currentDate: todayStr(),
+  currentUnit: 'sakura',
+  currentMeal: '朝食',
+  masterUnit: 'sakura',
+  showMaster: false
+};
+
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function pad(n){return String(n).padStart(2,'0')}
+
+function formatDate(str){
+  const [y,m,d] = str.split('-');
+  const days=['日','月','火','水','木','金','土'];
+  const w = days[new Date(str).getDay()];
+  return `${y}年${m}月${d}日（${w}）`;
+}
+
+function shiftDate(str, delta){
+  const d = new Date(str);
+  d.setDate(d.getDate()+delta);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+// ===================== DATA ACCESS =====================
+function loadResidents(){
+  try{
+    const raw = localStorage.getItem(RESIDENTS_KEY);
+    return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_RESIDENTS));
+  }catch{return JSON.parse(JSON.stringify(DEFAULT_RESIDENTS))}
+}
+
+function saveResidents(data){
+  localStorage.setItem(RESIDENTS_KEY, JSON.stringify(data));
+}
+
+function loadRecords(){
+  try{
+    const raw = localStorage.getItem(RECORDS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch{return {}}
+}
+
+function saveRecords(data){
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(data));
+}
+
+function recordKey(date, unit, room, meal){
+  return `${date}|${unit}|${room}|${meal}`;
+}
+
+function getRecord(records, date, unit, room, meal){
+  return records[recordKey(date,unit,room,meal)] || {shushoku:null,fukushoku:null,suibun:''};
+}
+
+function setRecord(records, date, unit, room, meal, field, value){
+  const k = recordKey(date,unit,room,meal);
+  if(!records[k]) records[k] = {shushoku:null,fukushoku:null,suibun:''};
+  records[k][field] = value;
+}
+
+function isRecorded(records, date, unit, room, meal){
+  const rec = getRecord(records,date,unit,room,meal);
+  const isMealSnack = meal==='間食';
+  if(isMealSnack) return rec.suibun !== '' && rec.suibun !== null && rec.suibun !== undefined;
+  return rec.shushoku !== null || rec.fukushoku !== null || (rec.suibun !== '' && rec.suibun !== null);
+}
+
+// ===================== RENDER =====================
+let records = loadRecords();
+let residents = loadResidents();
+
+function renderDateDisplay(){
+  document.getElementById('date-display').textContent = formatDate(state.currentDate);
+  const today = todayStr();
+  document.getElementById('btn-next').disabled = state.currentDate >= today;
+  document.getElementById('btn-next').style.opacity = state.currentDate >= today ? '0.45' : '1';
+}
+
+function renderUnitTabs(){
+  document.querySelectorAll('#unit-tabs .tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.unit === state.currentUnit);
+  });
+}
+
+function renderMealTabs(){
+  document.querySelectorAll('#meal-tabs .meal-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.meal === state.currentMeal);
+  });
+}
+
+function renderTable(){
+  const isSnack = state.currentMeal === '間食';
+  const head = document.getElementById('table-head');
+  const body = document.getElementById('table-body');
+
+  head.innerHTML = `<tr>
+    <th>部屋</th>
+    <th>氏名</th>
+    ${!isSnack?'<th>主食（0〜10）</th><th>副食（0〜10）</th>':''}
+    <th>水分（cc）</th>
+  </tr>`;
+
+  const unitResidents = (residents[state.currentUnit] || []).slice().sort((a,b)=>a.room.localeCompare(b.room,undefined,{numeric:true}));
+
+  body.innerHTML = '';
+  unitResidents.forEach(r=>{
+    const rec = getRecord(records, state.currentDate, state.currentUnit, r.room, state.currentMeal);
+    const done = isRecorded(records, state.currentDate, state.currentUnit, r.room, state.currentMeal);
+    const tr = document.createElement('tr');
+    tr.className = 'resident-row' + (done?' recorded':'');
+
+    const roomTd = `<td class="cell-room">${r.room}</td>`;
+    const nameTd = `<td class="cell-name">${r.name}</td>`;
+
+    let scoreCells = '';
+    if(!isSnack){
+      scoreCells = `
+        <td>${buildScoreBtns(r.room,'shushoku',rec.shushoku)}</td>
+        <td>${buildScoreBtns(r.room,'fukushoku',rec.fukushoku)}</td>`;
+    }
+
+    const waterVal = rec.suibun ?? '';
+    const waterTd = `<td><input class="water-input" type="number" min="0" max="9999"
+      data-room="${r.room}" data-field="suibun"
+      value="${waterVal}" placeholder="cc"></td>`;
+
+    tr.innerHTML = roomTd + nameTd + scoreCells + waterTd;
+    body.appendChild(tr);
+  });
+
+  // Attach events
+  body.querySelectorAll('.score-btn').forEach(btn=>{
+    btn.addEventListener('click', onScoreClick);
+  });
+  body.querySelectorAll('.water-input').forEach(inp=>{
+    inp.addEventListener('change', onWaterChange);
+    inp.addEventListener('input', onWaterChange);
+  });
+}
+
+function buildScoreBtns(room, field, selected){
+  let html = '<div class="score-btns">';
+  for(let i=0;i<=10;i++){
+    const isSel = selected === i;
+    let cls = 'score-btn';
+    if(isSel && i===0) cls += ' selected-0';
+    else if(isSel) cls += ' selected';
+    html += `<button class="${cls}" data-room="${room}" data-field="${field}" data-val="${i}">${i}</button>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function onScoreClick(e){
+  const btn = e.currentTarget;
+  const room = btn.dataset.room;
+  const field = btn.dataset.field;
+  const val = parseInt(btn.dataset.val);
+  setRecord(records, state.currentDate, state.currentUnit, room, state.currentMeal, field, val);
+  saveRecords(records);
+  renderTable();
+}
+
+function onWaterChange(e){
+  const inp = e.currentTarget;
+  const room = inp.dataset.room;
+  const val = inp.value.trim();
+  setRecord(records, state.currentDate, state.currentUnit, room, state.currentMeal, 'suibun', val);
+  saveRecords(records);
+  // Update row highlight without full re-render
+  const tr = inp.closest('tr');
+  if(tr){
+    const done = isRecorded(records, state.currentDate, state.currentUnit, room, state.currentMeal);
+    tr.classList.toggle('recorded', done);
+  }
+}
+
+function render(){
+  renderDateDisplay();
+  renderUnitTabs();
+  renderMealTabs();
+  if(!state.showMaster){
+    document.getElementById('main-content').style.display='block';
+    document.getElementById('master-screen').classList.remove('visible');
+    document.getElementById('unit-tabs').style.display='flex';
+    document.getElementById('meal-tabs').style.display='flex';
+    renderTable();
+  } else {
+    document.getElementById('main-content').style.display='none';
+    document.getElementById('unit-tabs').style.display='none';
+    document.getElementById('meal-tabs').style.display='none';
+    document.getElementById('master-screen').classList.add('visible');
+    renderMasterScreen();
+  }
+}
+
+// ===================== MASTER SCREEN =====================
+function renderMasterScreen(){
+  document.querySelectorAll('.master-unit-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.unit === state.masterUnit);
+  });
+  const list = document.getElementById('master-list');
+  list.innerHTML = '';
+  const unitData = (residents[state.masterUnit] || []).slice().sort((a,b)=>a.room.localeCompare(b.room,undefined,{numeric:true}));
+  unitData.forEach((r, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'master-item';
+    div.innerHTML = `
+      <input class="inp-room" type="text" placeholder="部屋" value="${r.room}" data-idx="${idx}">
+      <input class="inp-name" type="text" placeholder="氏名" value="${r.name}" data-idx="${idx}">
+      <button class="btn-del" data-idx="${idx}">削除</button>`;
+    list.appendChild(div);
+  });
+  list.querySelectorAll('.btn-del').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = parseInt(e.currentTarget.dataset.idx);
+      if(confirm('この居室を削除しますか？')){
+        residents[state.masterUnit].splice(i,1);
+        renderMasterScreen();
+      }
+    });
+  });
+}
+
+function saveMasterFromUI(){
+  const items = document.querySelectorAll('#master-list .master-item');
+  const updated = [];
+  items.forEach(item=>{
+    const room = item.querySelector('.inp-room').value.trim();
+    const name = item.querySelector('.inp-name').value.trim();
+    if(room||name) updated.push({room,name});
+  });
+  residents[state.masterUnit] = updated;
+  saveResidents(residents);
+}
+
+// ===================== CSV EXPORT =====================
+function exportCSV(){
+  const meals = ['朝食','昼食','夕食','間食'];
+  const headers = ['日付','ユニット','部屋','氏名',
+    '朝食_主食','朝食_副食','朝食_水分cc',
+    '昼食_主食','昼食_副食','昼食_水分cc',
+    '夕食_主食','夕食_副食','夕食_水分cc',
+    '間食_水分cc'
+  ];
+
+  const rows = [headers];
+  ['sakura','keyaki'].forEach(unit=>{
+    const unitLabel = unit==='sakura'?'さくら':'けやき';
+    const unitResidents = (residents[unit]||[]).slice().sort((a,b)=>a.room.localeCompare(b.room,undefined,{numeric:true}));
+    unitResidents.forEach(r=>{
+      const朝 = getRecord(records,state.currentDate,unit,r.room,'朝食');
+      const昼 = getRecord(records,state.currentDate,unit,r.room,'昼食');
+      const夕 = getRecord(records,state.currentDate,unit,r.room,'夕食');
+      const間 = getRecord(records,state.currentDate,unit,r.room,'間食');
+      rows.push([
+        state.currentDate, unitLabel, r.room, r.name,
+        朝.shushoku??'',朝.fukushoku??'',朝.suibun??'',
+        昼.shushoku??'',昼.fukushoku??'',昼.suibun??'',
+        夕.shushoku??'',夕.fukushoku??'',夕.suibun??'',
+        間.suibun??''
+      ]);
+    });
+  });
+
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const bom = '﻿';
+  const blob = new Blob([bom+csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `shokuji_${state.currentDate}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===================== EVENT BINDINGS =====================
+document.getElementById('btn-prev').addEventListener('click',()=>{
+  state.currentDate = shiftDate(state.currentDate,-1);
+  render();
+});
+document.getElementById('btn-next').addEventListener('click',()=>{
+  const today = todayStr();
+  if(state.currentDate < today){
+    state.currentDate = shiftDate(state.currentDate,1);
+    render();
+  }
+});
+
+document.querySelectorAll('#unit-tabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    state.currentUnit = btn.dataset.unit;
+    render();
+  });
+});
+
+document.querySelectorAll('#meal-tabs .meal-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    state.currentMeal = btn.dataset.meal;
+    render();
+  });
+});
+
+document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+document.getElementById('btn-master-open').addEventListener('click',()=>{
+  state.showMaster = true;
+  render();
+});
+
+document.getElementById('btn-master-close').addEventListener('click',()=>{
+  state.showMaster = false;
+  residents = loadResidents();
+  render();
+});
+
+document.getElementById('btn-master-save').addEventListener('click',()=>{
+  saveMasterFromUI();
+  saveResidents(residents);
+  alert('マスタを保存しました');
+  state.showMaster = false;
+  render();
+});
+
+document.querySelectorAll('.master-unit-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    saveMasterFromUI();
+    state.masterUnit = btn.dataset.unit;
+    renderMasterScreen();
+  });
+});
+
+document.getElementById('btn-add-resident').addEventListener('click',()=>{
+  saveMasterFromUI();
+  if(!residents[state.masterUnit]) residents[state.masterUnit]=[];
+  residents[state.masterUnit].push({room:'',name:''});
+  renderMasterScreen();
+  // Focus the last added room input
+  const items = document.querySelectorAll('#master-list .master-item');
+  if(items.length>0) items[items.length-1].querySelector('.inp-room').focus();
+});
+
+// ===================== INIT =====================
+render();
+</script>
+</body>
+</html>
